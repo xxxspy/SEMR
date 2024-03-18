@@ -118,7 +118,7 @@ $$
 - 同一个班级的学生
 - 治疗组内的患者
 
-在每种情况下，多水平分析（包括多水平 SEM）的目标是明确解释簇内和簇间的变异性.  如果我们要分析数据而忽略群体结构，我们就会高估自由度（因为我们的观察是非独立的,没有那么自由）.  我们无法区分簇内和簇间的影响； 相反，我们的参数将反映两种效应的混合, 这使得我们得出错误的结论.
+在每种情况下，多水平分析（包括多水平 SEM）的目标是明确解释组内和组间的变异性.  如果我们要分析数据而忽略群体结构，我们就会高估自由度（因为我们的观察是非独立的,没有那么自由）.  我们无法区分组内和组间的影响； 相反，我们的参数将反映两种效应的混合, 这使得我们得出错误的结论.
 
 ## 水平间效应
 
@@ -255,79 +255,94 @@ $$
 \gamma_{10} \dot{\textrm{readspeed}_{ij}} ) + \\
 ( r_{ij} + \mu_{0j} + \mu_{1j} \dot{\textrm{readspeed}_{ij}} )
 $$
-Note how $\textrm{readspeed}$ enters the model in two ways (individual and school level). As in previous examples, the fixed effects are denoted in the first set of parentheses, and the random effects in the second.
 
-# Multilevel SEM (MSEM) overview
+现在, 阅读速度实际上分解为两个变量, 一个体现校内变异, 一个体现校间变异.
 
-Okay, so we've got our head around standard multilevel models. Where does SEM enter the picture? In multilevel SEM, we use a latent variable approach to parcellate variation between and within clusters, rather than applying a cluster-based centering approach. This is the intuition:
+# 多水平结构方程(MSEM)
+
+好的，我们已经了解了标准的多层模型。 SEM 在哪里发挥作用？ 在多水平的 SEM 中，
+我们使用潜在变量方法来分割校间和校内的变化，而不是普通的中心化变量的方法。 看下图：
 
 ![](multilevelsem_variance.png)
 
-In this representation, we view the observed variables as jointly caused by within- and between-cluster variation as latent variables.
+在这个图中, 组间变量即L2层的变量(同一个组内不存在个体间变异), 这些变量(例如$A_j$)不带有角标i, 意味着不存在校内的个体间变异.
+在结构方程中, 潜变量是不可以被观测的变量, 用圆形或椭圆形表示, 所以你可以发现, 可观测的变量都位于中间位置, 
+也就是说所有观测变量受到两个潜变量的影响, 一个是L1层的反应个体变异的潜变量, 一个是L2层的反应组间变异的潜变量.
 
-Importantly, this framework also allows for the specification of random slopes such that within-person/cluster variation in the strength of an association between two variables can *itself* be a latent variable at the between-person level. For example, does the within-person association of reading speed with performance depend on student:teacher ratio? Said differently, does student:teacher ratio moderate the relationship between reading speed and performance? This is the multilevel SEM equivalent of *cross-level interaction* in MLM. Our graphical notation is as follows:
+重要的是, 这种模型是允许设置随机斜率和随机截距的, 前面已经论述过, 随机斜率和随机截距都是"潜变量", 即没有被观测的变量.
+例如, 我们的模型可以回答这样的问题: 学校的师生比是否影响到L1层的学生阅读速度和阅读成绩之间的关系? 下面是模型图:
+
 
 ![](school_msem.png)
 
-So far, however, the expression of multilevel data in a SEM framework has not revealed any new capabilities beyond standard MLM. Why would one consider multilevel SEM? First, some people find it easier to conceptualize of multilevel data structures and models within the SEM framework where we are used to path diagrams. Second, as in other non-multilevel analyses such as mediation, multilevel SEM offers the ability to test hypotheses involving several variables and paths. For an excellent introduction to the value of SEM for testing multilevel mediation, see Preacher, Zyphur, and Zhang (2010), *Psychological Methods*. Third, multilevel SEM allows us to test hypotheses involving *latent* variables, which are hard to implement in standard MLM. In particular, we can consider measurement models in which the covariation among a set of indicators is thought to reflect a latent variable. Fourth, the approach of cluster-mean centering introduces a potential bias in the between-group variance. In particular, having few level 1 observations and a low intraclass correlation will bias estimates of between-cluster effects (Lüdtke et al., 2008). This is especially problematic in cross-level mediation, where it is essential to treat the L1 portion of variance as a latent variable to recover unbiased parameters (Asparouhov & Muthén, 2006). In short, the latent decomposition of within-between in MSEM tends to provide better estimates than the centering method in MLM. 
+然而，多水平的SEM 比普通的 MLM 有什么优势?
+为什么要选择使用多水平的 SEM？ 
 
-## Sampling perspective
+- 首先，有些人发现在我们习惯于 SEM 的概念图, 容易概念化多级数据结构和模型。 
+- 其次，与其他回归分析类似，多水平SEM 可以一次检验多个变量关系, 而不像普通回归那样一次只能有一个被预测变量。 有关 SEM 在测试多层次中介方面的价值的精彩介绍，请参阅 Preacher、Zyphur 和 Zhang (2010) 的《心理学方法》。
+- 第三，多水平 SEM 使我们能够检验涉及潜在变量的假设，而这些假设在标准的多水平线性模型 中很难实现。 
+- 第四，普通的多水平模型中, 均值中心化方法在组间方差中引入了潜在的偏差。 特别是，1 级观测值很少且组内相关性较低，会使组间效应的估计产生偏差（Lüdtke 等人，2008 年）。 这在跨级中介中尤其成问题，其中必须将方差的 L1 部分视为潜在变量以恢复无偏参数（Asparouhov & Muthén，2006）。 简而言之，MSEM 中的潜在分解往往比 MLM 中的中心方法提供更好的估计。
 
-In MSEM, we have the option of whether to approach clustering from a (population) sampling perspective or a multilevel perspective. The sampling perspective is more typical in epidemiological or demographically representative studies in which we use stratified random sampling to cover the population of interest. This often involves computing sampling weights in which we might try to weight each set of observations so that the overall sample matches the composition of the population. For example, if we undersample African-American males, but wish to include them in the population to which we generalize, we might overweight those observations accordingly so that the parameters are more representative of the general population.
 
-This problem also occurs in situations where individuals are nested in neighborhoods, cities, or states, but we wish to generalize to the overall population (e.g., adults in the USA). Again, we might reweight observations in the estimation in order to estimate a model that is representative of the population of interest. Thus, if we oversample Colorado and undersample Idaho, reweighting could help us recover unbiased parameters that correct for this problem.
+# 多水平 SEM 模型设置
 
-According to the sampling perspective, clustering is an important feature of the data, but primarily because we wish to 'uncluster' the data in a representative fashion. That is, we are not interested in whether Colorado or Idaho has higher prevalence rates of depression, but instead we wish to estimate the prevalence of depression in the USA, accounting for the design of the epidemiological survey. If any/all of these questions pertain to your dataset or interest, see the `lavaan.survey` package, which is an add-on to `lavaan` that provides the functionality to handling design weights, clustering, and stratification. For example, we might wish to remove the effect of interviewer on prevalence estimates, rather than examine within-interviewer versus between-interviewer predictors. This could be done by setting up a `svydesign` object in which we account for clustering by interviewer.
-
-FYI, the sampling perspective on clustered data is implements in Mplus using the `TYPE=COMPLEX` specification in the `ANALYSIS` section.
-
-## Multilevel perspective
-
-By contrast, the multilevel perspective on clustered data is that we are specifically interested in parcelling variance at each level of the data structure so that we could examine predictors that explain variance at each level. For example, some researchers in our department (e.g., Dever Carney and Louis Castonguay) are interested in what are the client (L1), therapist (L2), and center/clinic (L3) factors that predict treatment outcomes in psychotherapy. As we talked about above, if a predictor exists at a lower level of the hierarchy (e.g., L1), it may nevertheless have systematic variance at higher levels. Thus, a client factor such as perceived therapeutic alliance may explain client-specific outcomes (L1), but alliance may also vary at the therapist level such that the clients of some therapists (L2) rate alliance higher, on average, relative to other therapists. Thus, even though we view alliance as the experience of a *client*, therapist-average alliance may explain why clients of some therapists do better than others. This is why the disaggregation approach mentioned above is crucial to resolving such questions: within-cluster centering, inclusion of cluster means.
-
-In MSEM, we have the option of using the conventional centering strategy or use latent decomposition (as mentioned above) to disaggregate variance for a lower-level variable at each level.
-
-In Mplus, we use `TYPE=TWOLEVEL` or `TYPE=THREELEVEL` in the `ANALYSIS` section to specify a multilevel model.
-
-# Multilevel SEM specification
-
-The formal specification of multilevel SEM (Muthén & Asparouhov, 2008) is:
+多水平的SEM模型如下 (Muthén & Asparouhov, 2008) :
 
 $$
 \boldsymbol{Y}_{ij} = \boldsymbol{\nu_j} + \boldsymbol{\Lambda}_j\boldsymbol{\eta}_{ij} + \boldsymbol{K_j}\boldsymbol{X}_{ij} + \boldsymbol{\varepsilon}_{ij}
 $$
 
-As in non-multilevel SEM, $\boldsymbol{\nu}_j$ captures the intercepts of the variables, but allowing these to vary by cluster. And as usual, we have factor loadings ($\boldsymbol{\Lambda}_j$), factor scores (\boldsymbol{\eta}_{ij}), and the influence of exogenous covariates $\boldsymbol{X}_{ij}$. The important point is that all of these can potentially vary by cluster. I'll spare you the details on how MSEM parcels the structural and measurement models at the within and between levels... But the MSEM can be estimated using maximum likelihood in the typical fashion, with variance being assigned to the appropriate level by latent variable estimation.
+As in non-multilevel SEM, $\boldsymbol{\nu}_j$ captures the intercepts of the variables, '
+but allowing these to vary by cluster. And as usual, we have factor loadings ($\boldsymbol{\Lambda}_j$), 
+factor scores (\boldsymbol{\eta}_{ij}), and the influence of exogenous covariates $\boldsymbol{X}_{ij}$. The important point is that all of these can potentially vary by cluster. I'll spare you the details on how MSEM parcels the structural and measurement models at the within and between levels... But the MSEM can be estimated using maximum likelihood in the typical fashion, with variance being assigned to the appropriate level by latent variable estimation.
 
-# A bit about Mplus MSEM syntax
+$\boldsymbol{\nu}_j$是截距, 在普通的SEM中它是常量, 但是在多水平的MSEM中, 它可以在组间变化, 它现在是变量. 
+因子载荷($\boldsymbol{\Lambda}_j$), 因子分($\boldsymbol{\eta}_{ij}$), 外生变量的协方差 $\boldsymbol{X}_{ij}$ 都是可以在组间变化的, 而普通的SEM是不同的.
 
-Unlike `lavaan`, which is a package for `R` that follows most `R` conventions, Mplus is a standalone program that has its own syntax. Although Mplus cannot compete with the all-purpose functionality of `R` for data management and visualization, Mplus has developed a host of useful features for manipulating data, such as within-cluster centering or computing interaction terms.
 
-The basic paradigm of Mplus is that a model consists of three parts: data, model syntax, and model output. By convention, the raw data are provided as a tab-separated file with no column headers, typically using the extension .dat. The Mplus model syntax has its own conventions, such as the use of `ON` to denote the regression of `Y ON X`. Likewise, `WITH` denotes the undirected (residual) association of `X WITH Y`. And factors are specified using `BY`, as in 'measured by': `F1 BY X1 X2 X3`. Mplus syntax also has major sections that define important components of the model, such as the estimator, what data are categorical, what additional outputs to provide, and so on.
+# MSEM 在 Mplus中的设定
 
-By convention, Mplus syntax files are stored as text with the extension .inp. And the output provided by Mplus is also text, stored as .out. There is an impressive array of information in the output file, but its storage as text makes it time-intensive to sift through each section. This is where the `readModels()` command from `MplusAutomation` can help index a number of output files by storing the information in R-friendly data structures such as lists and data.frames.
+与 lavaan（遵循大多数 R 语法的 R 包）不同，Mplus 是一个具有自己语法的独立程序。 
+尽管 Mplus 在数据管理和可视化方面无法与 R 的通用功能竞争，但 Mplus 开发了许多用于操作数据的有用功能，
+例如变量的中心化和计算交互项。
+
+Mplus的文件有三种：数据、模型语法和模型输出。
+按照惯例，原始数据作为制表符分隔的文件提供，没有列标题，通常使用扩展名 .dat。 
+Mplus模型语法有自己的约定，例如使用“ON”表示“Y ON X”的回归。同样，“WITH”表示“X AND Y”的无向（剩余）关联。
+因子使用“BY”指定，如：“F1 BY X1 X2 X3”。 
+Mplus 语法还包含定义模型的主要部分，例如估计器、哪些数据是分类的、要提供哪些输出等等。
+
+按照惯例，Mplus 代码文件存储为扩展名为 .inp 的文本。 
+Mplus提供的输出也是文本，存储为.out。输出文件中包含大量令人印象深刻的信息，但其以文本形式存储使得筛选每个部分非常耗时。
+“MplusAutomation”中的“readModels()”命令可以通过将信息存储在 R 的数据结构（例如列表和 data.frames）中, 
+这样你就可以方便的获得想要的数据. 
 
 ## WITHIN
 
-If a variable is specified as `WITHIN` in the `VARIABLE` section, then it is assumed to vary *only* within clusters and to have no between component. In the latent decomposition, the between component of the variable is zero. Thus, this statement is used when 1) the variable varies at the within-cluster level, and 2) we wish to assign the totality of its variance at the within-cluster level, assuming that there is no between component.
+如果一个变量在“VARIABLE”部分中被指定为“WITHIN”，则假定它*仅*在组内变化，并且在组之间没有变化。
+因此，当 1) 变量在组内级别变化，以及 2) 我们希望在组内分配其方差的总体时，使用此语句，假设组之间不存在差异。
 
 ## BETWEEN
 
-If a variable is specified as `BETWEEN` in the `VARIABLE` section, it is a cluster-level variable that has no variation within-cluster. These are typically called L2 variables. For example, student:teacher ratio would be a `BETWEEN` variable if we are examining students nested in schools.
+如果一个变量在“VARIABLE”部分中被指定为“BETWEEN”，则它是一个组间变量，在组内没有变化。这些通常称为 L2/L3 变量。
+例如，如果我们研究嵌套在学校中的学生，学生与教师的比例将是“BETWEEN”变量。
 
-## Neither WITHIN nor BETWEEN
+## 不是 WITHIN 也不是 BETWEEN
 
-If we do not specify that a variable is `WITHIN` or `BETWEEN` then Mplus will model its variance at both levels. That is, it will use latent decomposition to parcellate the variance into within- and between-cluster variance. At the between-cluster level, this means we are modeling the random intercept of that variable.
+如果我们没有指定变量是“WITHIN”或“BETWEEN”，那么 Mplus 将在两个级别对其方差进行建模。
+也就是说，它将使用潜在分解将方差分为组内方差和组间方差。在组间级别，这意味着我们正在对该变量的随机截距进行建模。
 
-# Getting started with MSEM in Mplus
+# MSEM在mplus中的应用
 
-Let's start with a simple multilevel model that we could fit using conventional MLM software. This is Example 9.1 from the Mplus user's guide.
+让我们从一个简单的多级模型开始，我们可以使用传统的多水平建模软件来拟合该模型。这是 Mplus 用户指南中的示例 9.1。
 
-## Centering approach to disaggregation
+## 中心化和变量分解
 
 ![](ex9.1a_diagram.png)
 
-The dot on the $y$ box denotes a random intercept of y. That is, there is between-cluster variation in the average level of $y$ that can be modeled at the between level. $x$ is the person-centered L1 predictor. $xm$ is the person mean on $x$. $w$ is a cluster-level covariate (i.e., no within variance).
+$y$ 框中的点表示 y 的随机截距。也就是说，$y$ 的平均水平存在组间变化，可以在水平之间进行建模。 
+$x$ 是组内中心化后的变量, 在L1层变化。 $xm$ 是对 $x$ 的组内的平均值, 在L2层变化。 $w$ 是组级协变量（即，没有组内方差）。
+
 ```
 TITLE:	this is an example of a two-level 
 	regression analysis for a continuous 
@@ -376,18 +391,19 @@ screenreg(ex9.1a_fit$results, single.row=TRUE, summaries = c("AICC", "CFI", "SRM
 #round(cor(ex9.1), 3)
 ```
 
-Let's compare that to the `lmer` function in `R`:
+我们用`R` 中的 `lmer` 函数来构建同样的模型:
 
 ```{r}
 ex9.1a_lmer <- lmer(y ~ x + w + xm + (1 | clus), ex9.1a, REML=FALSE)
 summary(ex9.1a_lmer)
 ```
 
-You can see that the results are essentially identical.
+你可以看到, 结果一样.
 
-## Latent decomposition approach to disaggregation
+## 潜变量分解法
 
-Unlike MLM, MSEM also offers the potential to consider variation in an observed variable as joint function of within- and between-cluster latent components. Let's re-run this analysis, using the decomposition approach.
+与多层线性模型（MLM）不同，多层结构方程模型（MSEM）还可以将观测变量分解为两个潜变量, 一个是组内的, 一个是组间的。让我们重新运行这个分析，使用潜变量分解法。
+
 
 ![](ex9.1b_diagram.png)
 
