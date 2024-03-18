@@ -1,8 +1,8 @@
 ---
-title: "Multilevel SEM"
-subtitle: "PSY 597 Week 15"
-author: "Michael Hallquist"
-date: "7 Dec 2017"
+title: "Multilevel SEM 多水平结构方程"
+subtitle: "介绍结构方程和R语言应用"
+author: "www.mlln.cn"
+date: "2024-3-11"
 output:
   html_document:
     code_folding: hide
@@ -28,22 +28,36 @@ pre { font-size: 16px; }
 </style>
 
 
-Note that this `Rmd` file depends on having `Mplus` installed. You can obtain a fully functioning student version for $350 here: https://www.statmodel.com/orderonline/categories.php?category=Mplus-Software/Student-Pricing. 
+注意我们的教程和代码以 `Rmd` 格式的文件存储， 这种文件是R代码常用格式， 我们的教程需要预先安装 Mplus . 
 
-Or you can use the demo version for free here: https://www.statmodel.com/demo.shtml
+你可以使用Mplus的免费版: https://www.statmodel.com/demo.shtml
 
-The demo version has the following constraints:
+免费版有很多限制：
 
 1.  Maximum number of dependent variables: 6
 2.  Maximum number of independent variables: 2
 3.  Maximum number of between variables in two-level analysis: 2
 4.  Maximum number of continuous latent variables in time series analysis: 2
 
-At this time, Yves Rosseel, the main developer of `lavaan`, has a prototype of multilevel SEM working for the package, but this has not been released to the general public. I suspect that this will be released in the next 6 months and should provide the functionality to run all of the examples in this RMarkdown file. You can see some of the basic setup here: http://users.ugent.be/~yrosseel/lavaan/tubingen2017/
+1.因变量最大数量：6
+2.自变量最大数量：2
+3.二水平分析中变量间最大数量：2
+4.时间序列分析中连续潜变量的最大数量：2
 
-In the meantime, `Mplus` is probably the most user-friendly program for multilevel SEM, though there is similar functionality in EQS and LISREL. In addition, the `OpenMx` package in `R` is free and supports multilevel analyses, but requires a substantially different approach to syntax and specification.
+现在“lavaan”的作者 Yves Rosseel 已经更新了 lavaan 这个R的代码包， 它已经可以做多水平的结构方程模型了， 但是因为本教程撰写之初，
+lavaan 并没有完全支持多水平分析， 所以本教程并不是使用lavaan做结构方程， 而是在底层使用了mplus， 但是是在R的语言环境下使用的. 
 
-This RMarkdown also leverages a package called `MplusAutomation`, which allows for effective cross-talk between `Mplus` and `R`. In particular, `Mplus` outputs all information into a text-based file, which makes it difficult to compare outputs across models or to extract specific subsections. If you're interested in how this package works, please see [Hallquist and Wiley](http://dependpsu.weebly.com/uploads/6/4/4/5/64458901/hallquist-wiley_mplusautomation_manuscript_sem_accepted_oct2017.pdf) (in press), *Structural Equation Modeling*.
+本篇教程先介绍多水平结构方程的基本概念, 有一些数学符号可能难以理解, 
+但是不要担心, 本教程不是给专家看的, 所以我们针对入门学生的一些常见问题进行讲解,
+即便无法理解理论部分, 只要你遵循我们的指导也可以完成一篇合格的多水平结构方程的分析报告.
+
+本篇教程主要使用mplus软件, Mplus 可能是好用的多水平结构方程软件，尽管 EQS 和 LISREL 中也有类似的功能.  
+此外，R 中的 OpenMx 包是免费的，支持多级分析，但需要采用截然不同的语法和规范方法, 适合会R语言的童鞋.
+
+这篇教程虽然使用了mplus, 但是我们建议你使用 R 的一个工具库 MplusAutomation, 这个工具库帮助你完成非常无聊的结果整理工作, 
+因为 Mplus 输出的结果是文本文件, 难以转换为表格, 难以对比不同模型的结果, 所以我们鼓励你使用 MplusAutomation 这个工具, 
+它可以自动帮你完成这个功能. 如果对R比较陌生， 可以看我们录制的R语言的快速入门视频教程, 因为学习编程的诀窍只有一个, 
+就是快速入门, 快速应用, 视频放在这里[《R语言快速入门教程》](https://www.bilibili.com/video/BV1Wt4y1g7rn/)
 
 ```{r setup, include=FALSE}
 if (!require(pacman)) { install.packages("pacman"); library(pacman) }
@@ -62,9 +76,9 @@ semPaths_default <- function(lavObject, sizeMan=15, ...) {
 mbin <- "/Users/mnh5174/Applications/Mplus/mplus"
 ```
 
-# What is multilevel analysis?
+# 什么是多水平模型(不限于多水平结构方程模型)
 
-In the standard general linear model (GLM), we assume that observations are independent of each other. In particular, we assume that the residuals are distributed iid normal:
+从一般的线性模型开始, 然后逐渐引入多水平的概念. 你可以看下一般的线性回归模型:
 
 $$
 \begin{align*}
@@ -73,24 +87,46 @@ Y &= B_0 + B_1 X_1 + B_2 X_2 + ... B_p X_p + \varepsilon \\
 \end{align*}
 $$
 
-The assumption of independence is violated when:
+一般的线性模型理解起来非常简单, p个预测变量x, 通过线性组合, 来对被预测的变量Y进行预测. 但是这个模型有一个前提, 就是样本之间没有相互依赖, 
+或者说, 回归残差ε是独立同分布的. 但是如果你的样本是重复测量的, 你可能会得到下面这样的样本数据:
 
-1.  There are multiple observations per person (e.g., longitudinal data).
-2.  There are known groups in the data that introduce similarity among group members.
+重复测量的数据格式通常包括两种主要类型：长型格式和宽型格式. 
 
-Examples of multilevel/clustered data:
+- 长型格式：在这种格式中，每个受试者的每次重复测量都会作为一条独立的记录. 例如，如果一个受试者被重复测量了四次，那么该受试者就会有四条记录. 每条记录都包含受试者的标识信息以及对应的测量值. 这种格式的优点在于可以清晰地展示每次测量的具体情况，但可能会导致数据集的行数较多. 
+- 宽型格式：这是数据分析时最常用的格式. 在这种格式中，每个受试者只有一条记录，而重复测量的数据则作为该记录的不同变量. 例如，如果一个受试者被重复测量了四次，那么这四个测量值就会作为该受试者的四个不同变量. 这种格式的优点在于可以简化数据集的结构，方便进行统计分析，但可能需要对数据进行适当的转换和重构. 
 
-1.  Trials of an experimental task nested within individual (e.g., reaction times or accuracy data)
-2.  A set of neurons (e.g., a population) measured in each animal, but with the goal of describing the pattern in a group of animals
-3.  Longitudinal measurements of questionnaire or interview-based data
-4.  Students within classrooms within schools (a so-called three-level model)
-5.  Patients within therapy groups
+如果是长型格式 , 你看下面的数据, 同一个被试会在不同的时间点测量4次, 那么同一个被试的4个样本是高度相关的, 这时候不可以直接使用一般线性回归分析.
 
-In each case, the goal of multilevel analyses, including multilevel SEM, is to account for both within-cluster and between-cluster variability explicitly. If we were to analyze the data ignoring the group structure, we would overestimate the degrees of freedom (since our observations are non-independent). And we could not separate within- versus betewen-cluster effects; instead, our parameters would reflect an unknown mixture of the two.
+| 被试ID | 测量轮次 | 测量值 |  
+| :--: | :--: | :--: |  
+| 001 | 1 | 25.5 |  
+| 001 | 2 | 26.2 |  
+| 001 | 3 | 25.8 |  
+| 001 | 4 | 26.1 |  
+| 002 | 1 | 24.9 |  
+| 002 | 2 | 25.3 |  
+| 002 | 3 | 25.1 |  
+| 002 | 4 | 25.5 |  
+| ... | ... | ... |
 
-## L1 versus L2 effects
+常见的多水平数据还有下面几种:
 
-Multilevel analysis also allows the researcher to ask specific questions at each level of the model. Let's consider the case of students (L1) nested within schools (L2). More specifically, let's say we're interested in what student- and school-level factors influence test performance. At the school level (aka L2), we hypothesize that the student:teacher ratio influences reading performance such that more students per teacher is associated with poorer performance. By definition, the student:teacher ratio is only meaningful as a school-level variable (setting aside the possibility of classroom variation) and has no variation at the person level. This might look like:
+- 嵌套在个体中的实验任务的试验（例如，反应时间或准确性数据） 
+- 在每只动物中测量一组神经元（例如，群体），但目的是描述一组动物的模式 
+- 问卷或调查的纵向测量 
+- 基于访谈的数据 
+- 同一个班级的学生
+- 治疗组内的患者
+
+在每种情况下，多水平分析（包括多水平 SEM）的目标是明确解释簇内和簇间的变异性.  如果我们要分析数据而忽略群体结构，我们就会高估自由度（因为我们的观察是非独立的,没有那么自由）.  我们无法区分簇内和簇间的影响； 相反，我们的参数将反映两种效应的混合, 这使得我们得出错误的结论.
+
+## 水平间效应
+
+多水平分析还允许研究人员在模型的每个水平提出具体问题.  
+让我们考虑一下学生 (L1层面) 嵌套在学校 (L2层面) 内的情况. 
+ 在学校层面，我们假设学生与教师的比例会影响阅读成绩，因此每位教师的学生越多，成绩越差.  
+ 根据定义，学生与教师的比例仅作为学校层面的变量才有意义（因为同一所学校的学生有类似的师生比例, 
+ 这个变量不随学校内学生的变化而变化），在个人层面上没有变化.  这可能看起来像下面这样的数据:
 
 ```{r}
 tt <- dplyr::tribble(
@@ -106,9 +142,15 @@ tt <- dplyr::tribble(
 kable(tt)
 ```
 
-Notice that there is no student-specific variation in the `stratio`. This is the simplest case for a predictor because there is no concern that it could represent a mixture of student and school effects. That is, stratio cannot predict any L1 variance.
+- 第一列 student 是学生的编号. 
+- 第二列 school 是学生所在的学校名称. 
+- 第三列 stratio 是学生所在学校的师生比，即每个老师负责的学生数量. 从数据中可以看到，Radio Park 学校的师生比是20，而 Corl Street 学校的师生比是16. 
+- 第四列 readtest 是学生的阅读测试分数. 
 
-We wish to represent the reading test performance for person *i* in school *j* as a function of reading speed. Some notation:
+
+请注意，stratio在同一个学校下没有变化.  这是预测变量最简单的情况，因为不用担心它可能代表学生和学校效应的混合.  也就是说，stratio 无法预测任何 L1 方差(即同一个学校内学生阅读成绩的变化不可能是师生比决定的). 
+
+用方程来表示变量的关系就是:
 
 $$
 \begin{align*}
@@ -116,11 +158,29 @@ $$
 \beta_{0j} &= \gamma_{00} + \gamma_{01} \textrm{stratio}_j + \mu_{0j} \\
 \end{align*}
 $$
-In this notation, $\gamma_{01}$ represents the school-level effect of student:teacher ratio on test performance. We also allow for there to be normally distributed school-level variation in test performance, $\mu_{0j}$ around the sample average $\gamma_{00}$. To keep the $\beta_{0j}$ equation easy to interpret, L2 predictors are typically centered around the grand mean. This ensures that $\gamma_{00}$ retains the interpretation of the sample average test performance (fixed effect), and $\mu_{0j}$ is school variation around this mean (random effect).
 
-In addition, we might ask: what student characteristics enhance performance on standardized tests? These would be considered L1 predictors because they vary at the level of the student.
+第一个方程没有预测变量(自变量), j是学校代码, 
+i是学生代码, 那么 $\beta_{0j}$ 意思是学校的阅读成绩平均分, 同一个学校的学生有同一个值, 
+$r_{ij}$是学生的离均差, 即偏离所在学校的平均值 $\beta_{0j}$ 的大小. 
+第二个方程 $\gamma_{00}$ 是所有学校所有同学的总平均分, 师生比会影响到学校的平均成绩， 师生比的效应是 $\gamma_{01}$ .  这个模型没有纳入任何个体层面的变量， 但是这个模型是帮助你理解什么是多水平模型的：
+师生比通过影响学校平均水平$beta_{0j}$ 进而影响到了学生的成绩${readtest}_{ij}$.  
+$\beta_{0j}$ 带有角标j, 说明它是一个变量, 但是它是未知的, 被称作随机截距. 
 
-For example, students who read more words per minute may perform better on a standardized reading comprehension exam.
+所以我们通常还会写一个整体模型:
+
+$$
+\begin{align*}
+\textrm{readtest}_{ij} &= \gamma_{00} + \gamma_{01} \textrm{stratio}_j + \mu_{0j} + r_{ij}
+\end{align*}
+$$
+
+我们只是把第二个等式替换到第一个等式中的 $\beta_{0j}$. 
+你注意看小角标 i 和 j, 例如 $stratio_j$ 只有角标j, 说明在个体间同一个学校内是不变的. 
+
+
+下面我们继续丰富我们的模型, 纳入个体层面的变量$readpermin$, 它用于测量学生的阅读速度, 案例数据如下:
+
+
 
 ```{r}
 tt <- tt %>% add_column(readpermin=c(20, 14, 18, 25, 35, 30), .before="school")
@@ -129,11 +189,24 @@ kable(tt)
 
 ## Disaggregating within- versus between-cluster effects
 
-Importantly, the association between an L1 predictors and the outcome could reflect student and/or school variability. Perhaps students read more quickly because of an individual-level (aka L1) factor such as gray matter volume. Or might some schools have policies that promote better reading such that the average reading speed varies by school (i.e., at L2).
+## 区分组间和组内效应
 
-Because reading speed is an L1 variable (i.e., individual/student), it may have systematic variation at both the individual (L1) and school (L2) level. In conventional multilevel modeling (MLM), one can disentangle the variance at each level using appropriate centering (Curran & Bauer, 2011). In particular, the usual approach is to center the predictor (reading speed) around the school mean such that we now have a variable that represents deviation in reading speed relative to the school average. Then, we also compute the school means and include those as a predictor at L2. In this way, the effect of per-school reading speed on test performance can be examined specifically. Likewise, individual variation in reading speed not explainable by the school average can also be examined.
+下面的模型可以将阅读速度纳入:
 
-More notation from the MLM world. 
+$$
+\begin{align*}
+\textrm{readtest}_{ij} &= \beta_{0j} + \beta_{1} \textrm{readspeed}_{ij} + r_{ij} \\
+\beta_{0j} &= \gamma_{00} + \gamma_{01} \textrm{stratio}_j + \mu_{0j}
+\end{align*}
+$$
+
+$\beta_{1}$是阅读速度的系数, 它没有角标, 意味着它是一个固定效应, 它在所有个体和所有学校之间都是不变的.
+
+
+重要的是, 个体层面的预测变量与结果变量(被预测变量)之间的关联可以反映个体之间的差异, 也可以反应学校的差异. 
+也许学生的阅读速度更快是因为个人层面因素(某种气质类型),  或者一些学校可能有促进更好阅读的政策，因此平均阅读速度因学校而异）.
+所以上面的模型并不能反映真实的情况. 那么我们可以让固定效应$\beta_{1}$变成随机效应, 模型这样写:
+
 
 $$
 \begin{align*}
@@ -143,19 +216,26 @@ $$
 \end{align*}
 $$
 
-The major difficulty of this representation is that $\textrm{readspeed}_{ij}$ may have variation at the person and school levels. Thus, the main coefficient of interest for this predictor, $\gamma_{10}$, (fixed effect) is an unknown combination of indiviual and school effects. Here, we also allow for the association of reading speed with reading test performance to vary randomly by school, $\mu_{1j}$.
+$\beta_{1j}$是未知的, 因为有角标j, 代表随学校的不同而不同, 但在同一个学校内的个体间变化. 
 
-As mentioned above, to handle the problem of $\textrm{readspeed}$ potentially having variation at L1 and L2, we apply the L1 centering + L2 means approach.
+由于阅读速度是一个 L1 变量（即个人/学生），
+因此它可能在个人 (L1) 和学校 (L2) 层面上都有系统性的变化。 
+在传统的多级建模 (MLM) 中，可以使用适当的中心化方法来分离每一级的变异（Curran & Bauer，2011）。 
+例如，通常的方法是将预测变量（阅读速度）减去学校平均值(注意每个学校有不同的平均值奥)，
+这样我们现在就有一个变量来表示阅读速度相对于学校平均值的变化, 这个新的变量放入L1层的模型就可以排除学校层面变异的影响。 
+然后，我们还以学校均值(这是一个变量,因为每个学校有不同的平均阅读苏速度)并将其作为 L2 的预测变量。
+这样，就可以具体考察每所学校的阅读速度对考试成绩的影响。 
+同样，也可以检查学校平均水平无法解释的阅读速度的个体差异。
 
-The notation for the school-centered reading speed is:
+我们使用这种方法将阅读速度进行中心化:
 
 $$
 \dot{\textrm{readspeed}_{ij}} = \textrm{readspeed}_{ij} - \bar{\textrm{readspeed}_{j}}
 $$
 
-That is, we subtract the school mean reading speed, $\bar{\textrm{readspeed}_{j}}$, from each student in that school.
-
-We then introduce both of these new variables into the model:
+$\bar{\textrm{readspeed}_{j}}$是每个学校的阅读速度均值, 它随学校的不同而不同, 所以它是L2层面的变量; 
+$\dot{\textrm{readspeed}_{ij}}$以学校均值为中心的阅读速度, 它反映了个体阅读速度的差异, 所以它是L1层面的变量.
+这两个变量可以整合到模型中:
 
 $$
 \begin{align*}
@@ -165,10 +245,9 @@ $$
 \end{align*}
 $$
 
-Thus, the school-average reading speed predicts school-level variation in test performance, whereas
-school-deviated individual variation predicts the association of individual reading speed on performance.
-
-This is perhaps more evident in the combined equation:
+$\gamma_{02}$是L2层面的阅读速度的固定效应, 反映了学校整体阅读速度的变化对学生整体阅读成绩的影响;
+$\beta_{1j}$是L1层面的阅读速度的随机效应, 也就是不同学校学生的阅读速度对阅读成绩的效应是不同的, 
+不过你也可以假定为固定效应, 那就是不同学校有相同的效应, 写为 $\beta_{1}$.
 
 $$
 \textrm{readtest}_{ij} = ( \gamma_{00} + \gamma_{01} \textrm{stratio}_j +
