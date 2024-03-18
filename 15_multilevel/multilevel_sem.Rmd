@@ -218,7 +218,7 @@ $$
 \boldsymbol{Y}_{ij} = \boldsymbol{\nu_j} + \boldsymbol{\Lambda}_j\boldsymbol{\eta}_{ij} + \boldsymbol{K_j}\boldsymbol{X}_{ij} + \boldsymbol{\varepsilon}_{ij}
 $$
 
-As in non-multilevel SEM, $\boldsymbol{\nu}_j$ captures the intercepts of the variables, but allowing these to vary by cluster. And as usual, we have factor loadings ($\boldsymbol{\Lambda}_j$), factor scores (\boldsymbol{\eta}_{ij}), and the influence of exogenous covariates $\boldsymbol{X}_{ij}$. The important point is that all of these can potentially vary by cluster. I'll spare you the details on how MSEM parcels the structural and measurement models at the within and between levels... But the MSEM can be estimated using maximum likelihood in the typical fashion, with variance being assigned to the appropriate level by latent variable estimation.
+As in non-multilevel SEM, $\boldsymbol{\nu}_j$ captures the intercepts of the variables, but allowing these to vary by cluster. And as usual, we have factor loadings ($\boldsymbol{\Lambda}_j$), factor scores ($\boldsymbol{\eta}_{ij}$), and the influence of exogenous covariates $\boldsymbol{X}_{ij}$. The important point is that all of these can potentially vary by cluster. I'll spare you the details on how MSEM parcels the structural and measurement models at the within and between levels... But the MSEM can be estimated using maximum likelihood in the typical fashion, with variance being assigned to the appropriate level by latent variable estimation.
 
 # A bit about Mplus MSEM syntax
 
