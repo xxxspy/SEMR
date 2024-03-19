@@ -22,5 +22,8 @@ MODEL:
 	  %BETWEEN%
 	    y ON w 
 	         x (gamma01);
+MODEL CONSTRAINT:
+NEW(betac);
+	betac = gamma01 - gamma10;
 OUTPUT:
 STDYX RESIDUAL;

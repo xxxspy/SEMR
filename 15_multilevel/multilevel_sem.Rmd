@@ -361,6 +361,86 @@ MODEL:
 	y ON w xm;
 ```
 
+下面我们逐行解读以上代码.
+
+### TITLE
+
+```
+TITLE:	this is an example of a two-level 
+	regression analysis for a continuous 
+	dependent variable with a random intercept and an observed covariate
+```
+
+TITLE 命令用于提供标题, 就是为了方便人类阅读, 并无其他用途.
+
+### DATA
+
+```
+DATA: FILE = ex9.1a.dat;
+```
+
+DATA 命令用于提供数据集的信息。 
+FILE 选项用于指定包含要分析的数据的文件的名称，ex9.1a.dat.  
+由于数据集默认为自由格式，因此不需要 FORMAT 语句。
+
+### VARIABLE
+
+```
+VARIABLE:	NAMES = y x w xm clus;
+	WITHIN = x;
+	BETWEEN = w xm;
+	CLUSTER = clus;
+```
+
+VARIABLE 命令用于提供有关数据集中变量的信息。 
+NAMES 选项用于为数据集中的变量分配名称。 
+此示例中的数据集包含五个变量：y、x、w、xm 和 clus。
+
+WITHIN 选项用于标识数据集中在个体级别上测量并仅在组内级别上建模的变量。 
+它们被指定为在模型的组间没有差异。 BETWEEN 选项用于识别数据集中的变量，这些变量是在组间(L2)上测量的，
+并且仅在组间使用。 在WITHIN 或BETWEEN 语句中未提及的变量是在个体级别上测量的，并且可以在组内和组间建模。 
+由于WITHIN 语句中未提及y，因此它是在既可以在组间也可以在组内使用。 
+在组间只用时，它是随机截距。 
+CLUSTER 选项用于标识分组变量。 
+CENTER 选项用于指定分析中使用的居中类型以及要居中的变量。 在此示例中，选择了均值居中.
+
+### DEFINE
+
+```
+DEFINE: CENTER x (GRANDMEAN);
+```
+
+DEFINE命令用于转换现有变量和创建新变量。 
+CENTER 选项用于指定分析中使用的中心化类型以及将中心化的变量。 中心化有助于结果的解释。 
+在此示例中，变量x使用总均值中心化，即从变量 x 的值中减去 x 的所有样本均值.
+
+### ANALYSIS 
+
+```
+ANALYSIS: TYPE = TWOLEVEL;
+```
+
+ANALYSIS 命令用于描述分析的技术细节。 通过选择 TWOLEVEL，将估计具有随机截距的多级模型。
+所以, 与其他多水平建模软件不同的是, 我们似乎没有明显的告诉mplus我们有一个随机的截距, 
+但是指定了 TYPE = TWOLEVEL .
+
+### MODEL
+
+```
+MODEL:
+  %WITHIN%
+  y ON x;
+  %BETWEEN%
+  y ON w xm;
+```
+
+MODEL命令用于描述要估计的模型。 
+在多水平模型中，我们需要指定是组间还是组内。 在模型的组内部分"%WITHIN%"，ON 语句描述了 y 对个体水平协变量 x 的线性回归。 
+
+在组间部分, ON 语句描述了y的随机截距对组间变量 w 和 xm 上的回归。 
+ANALYSIS 命令的ESTIMATOR 选项可用于选择不同的估计器。 下面演示的是如何在R语言环境中, 使用mplus: 
+
+
 ```{r}
 ex9.1a <- read.table("ex9.1a.dat", col.names = c("y", "x", "w", "xm", "clus"))
 kable(head(ex9.1a, n=15))
@@ -428,6 +508,29 @@ MODEL CONSTRAINT:
 	betac = gamma01 - gamma10;
 ```
 
+以上代码与之前的代码区别是，变量 x 被分解为两个潜在变量部分，而不是像传统多水平回归建模中那样被视为观察变量。 
+当 VARIABLE 语句中未将 x 设定为组内和组间时,  x 会在组内和组之间建模时，就会发生分解。 
+分解的数学表达式是:
+
+$$
+x_{ij} = x_{wij} + x_{bj}
+$$
+
+式中 i 表示个体, j 表示组, $x_{bj}$代表了只在组间变动的变量, 它其实是x的分组均值, 
+$x_{wij}$代表了只在组内变动的变量, 相当于$x_{ij}-groupmean$, 所以分解也可以写成:
+
+$$
+x_{wij} = x_{ij} - x_{bj}
+$$
+
+
+在 MODEL 命令中，模型WITHIN部分的标签 gamma10 和模型BETWEEN部分的标签 gamma01 被分配给模型两个部分中 y 对 x 的线性回归中的回归系数，
+以用于后面的调用. "MODEL CONSTRAINT" 用于设定模型的约束. "NEW"用于创建一个新参数. 这个参数叫做betac, 它指的是 gamma01 和 gamma10 之差.
+我们之所以定义这个参数, 因为它被成为 “contextual effect” (Raudenbush and Bryk, 2002, p. 140, Table 5.11)
+
+
+下面是代码运行的结果:
+
 ```{r}
 ex9.1b <- read.table("ex9.1b.dat", col.names = c("y", "x", "w", "clus"))
 kable(head(ex9.1b, n=15))
@@ -447,11 +550,16 @@ ex9.1b_mobj <- mplusObject(
 	  %BETWEEN%
 	    y ON w 
 	         x (gamma01);",
+  MODELCONSTRAINT = "NEW(betac);
+	betac = gamma01 - gamma10;",
   OUTPUT="STDYX RESIDUAL;",
   rdata = ex9.1b
 )
 
 ex9.1b_fit <- mplusModeler(ex9.1b_mobj, modelout = "ex9.1b.inp", run=TRUE, Mplus_command = mbin, hashfilename = FALSE)
+summary(ex9.1b_fit)
+ coef(ex9.1b_fit)
+ ex9ex9.1b_fit$
 screenreg(ex9.1b_fit$results, single.row=TRUE, summaries = c("AICC", "CFI", "SRMR.Within", "SRMR.Between"))
 #ex9.1 <- ex9.1 %>% group_by(clus) %>% mutate(xm_mine=mean(x), xwi=x - xm_mine)
 #ex9.1 %>% group_by(clus) %>% 
