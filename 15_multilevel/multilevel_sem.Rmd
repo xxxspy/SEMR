@@ -566,28 +566,52 @@ screenreg(ex9.1b_fit$results, single.row=TRUE, summaries = c("AICC", "CFI", "SRM
 
 ```
 
-## Random slopes in MSEM
+## MSEM 中的随机截距
 
-As in standard MLM, we might expect there to be between-person variation in the strength of an association. For example, are there meaningful interindividual differences in the rate of change in age-related declines in memory? In MSEM, we need to specify these random slopes as latent variables that vary at L2.
+![](ex9.2.random.slop)
 
-Here is example 9.2 from the users guide using the within-between latent disaggregation for $x$, an L1 predictor.
+上图是随机截距的模型图, 注意区分矩形和圆形, 因为矩形代表的是显变量, 圆形代表的是潜变量.
+
+该示例与示例之前的模型的区别在于该模型同时具有随机截距和随机斜率。 
+在模型的"Within"部分，从 x 到 y 的箭头末端的实心圆表示随机截距，在模型的"Between"部分的潜变量y代表随机截距。 
+在模型的"Within"部分, 从 x 到 y 的箭头中间的实心圆表示随机斜率, 因为斜率是随机的, 所以它是一个变量, 我们赋予它一个变量名s。 
+在模型的"Between"部分，随机截距和随机斜率以圆圈显示，因为它们是跨组变化的连续潜在变量。 变量 xm 是取每个组的 x 平均值。
+
+下面是mplus用于定义这个模型的代码:
 
 ```
-TITLE:	this is an example of a two-level 
-	regression analysis for a continuous 
-	dependent variable with a random slope and a latent covariate
-DATA:   FILE = ex9.2c.dat;
-VARIABLE:	NAMES = y x w clus;
-	BETWEEN = w;
-	CLUSTER = clus;
-ANALYSIS:	TYPE = TWOLEVEL RANDOM;
+TITLE: this is an example of a two-level
+  regression analysis for a continuous
+  dependent variable with a random slope and
+  an observed covariate
+DATA: FILE = ex9.2a.dat;
+VARIABLE: NAMES = y x w xm clus;
+  WITHIN = x;
+  BETWEEN = w xm;
+  CLUSTER = clus;
+DEFINE: CENTER x (GROUPMEAN);
+ANALYSIS: TYPE = TWOLEVEL RANDOM;
 MODEL:
-	%WITHIN%	
- 	s | y ON x;		
-	%BETWEEN%	
-	y s ON w x;
-	y WITH s;
+  %WITHIN%
+  s | y ON x;
+  %BETWEEN%
+  y s ON w xm;
+  y WITH s;
 ```
+
+在 DEFINE 命令中，个体级协变量 x 使用 x 的组均值居中。 当估计随机斜率时建议这样做（Raudenbush & Bryk, 2002, p. 143）。
+
+在模型的内部部分，$|$ 符号与 TYPE=RANDOM 结合使用来命名和定义模型中的随机斜率。
+$|$ 左侧用于设置随机斜率的名称,你可以设置任何自己觉得合适的名称。$|$ 右侧之名随机斜率发生在哪一条路径。 使用 ON 选项定义随机斜率。
+
+
+在模型的"between"部分，ON 语句描述了组间变量 w 和 xm 上的随机截距 y 和随机斜率 s 的线性回归。 
+估计 s 和 y 的截距和残差方差，默认情况下残差不相关。 WITH 语句指定 s 和 y 的残差相关。 
+此类分析的默认估计量是具有稳健标准误差的最大似然估计。 ANALYSIS 命令的ESTIMATOR 选项可用于选择不同的估计器。 其他命令的解释可以在例 9.1 中找到。
+
+以下是在R中估计该模型的方法:
+
+
 
 ```{r}
 ex9.2c <- read.table("ex9.2c.dat", col.names = c("y", "x", "w", "clus"))
@@ -618,7 +642,7 @@ screenreg(ex9.2c_fit$results, single.row=TRUE, summaries = c("AICC"))
 ```
 
 
-# Hox Family IQ MSEM example
+# Hox Family IQ MSEM 案例
 
 These data are from Joop Hox's multilevel book. The basic structure is that we have six intelligence measures for 400 children from 60 families. Thus, we have children nested within families. If intelligence has a genetic or heritable component, the between-family differences may be of particular interest. The measures are word list, cards, matrices, figures, animals, and occupations.
 One possibility is that the intelligence tests all form a single *g* factor at the between-family level such that some families have higher average scores on intelligence measures than others. Another possibility is that the subscales form two factor: numeric (word list, cards, matrices) versus perceptual (figures, animals, occupations) intelligence.
